@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+      <meta http-equiv="Content-Security-Policy"  content="connect-src * 'unsafe-inline';">
+      <!--   <script src="/websocket.js"></script>
+        <link href="/websocket.css" rel="stylesheet"> -->
+       <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+  <style>
+            body {
+                 background-color: #f5f5f5;
+                 }
+     
+            h1   {
+                  position: relative;
+                  left: 520px;
+                  color: #708090;
+                  font-family: sans-serif;
+                  } 
+            #message    { width: 400px ; height: 35px ; border: 1px solid #c3c3c3 ;
+                       -webkit-flex-wrap: wrap ; flex-wrap: wrap; -webkit-align-content: center;  align-content: center;
+                       -webkit-border-radius: 5px ; -moz-border-radius: 5px ;  border-radius: 5px; } 
+    
+            select   { 
+                       width: 300px; 
+                     }
+            #incomingMsgOutput { width: 650px; 
+                       /* border: 3px solid gray; */ 
+                       position: relative;
+                       left: 200px;
+                       background-color: #E6E6FA;
+                     }
+            #btnConnect    { 
+                  position: relative;
+                  left: 250px;
+                  width: 80px;
+                  bottom: 20px;
+                  height: 35px; 
+            }
+            #btnDisconnect {
+                  position: relative;
+                  left: 250px;
+                  width: 100px; 
+                  bottom:20px ;
+                  height: 35px;
+             }
+            #btnSend       {
+             width: 100px; 
+             }
+              #divId{
+              font-size: 20px ;
+              font-family: sans-serif;
+              position: relative;
+              left: 30px;
+              top:6px;
+             } 
+             #subId{
+             font-size: 20px ; 
+             font-family: sans-serif; 
+             position: relative ;
+             left: 30px ;
+             }
+             
+             
+             #img{
+           border-radius: 1px;
+           }
+        ul {
+            display:block;
+             /* background:#45619D;  */
+            list-style:none;
+            margin:0;
+            padding:12px 10px;
+            height:21px;
+        }
+       
+        #noti_Container {
+            /* position:relative; */
+            position:absolute;
+        }
+        /* THE POPULAR RED NOTIFICATIONS COUNTER. */
+        #noti_Counter {
+            display:block;
+            position:absolute;
+            background:#E1141E;
+            color:#FFF;
+            font-size:12px;
+            font-weight:normal;
+            padding:1px 3px;
+            margin:-8px 0 0 25px;
+            border-radius:2px;
+            -moz-border-radius:2px; 
+            -webkit-border-radius:2px;
+            z-index:1;
+        }
+        
+        /* THE NOTIFICAIONS WINDOW. THIS REMAINS HIDDEN WHEN THE PAGE LOADS. */
+        #notifications {
+            display:none;
+            width:430px;
+            position:absolute;
+            top:30px;
+            left:0;
+            background:#FFF;
+            border:solid 1px rgba(100, 100, 100, .20);
+            -webkit-box-shadow:0 3px 8px rgba(0, 0, 0, .20);
+            z-index: 1;
+        }
+        /* AN ARROW LIKE STRUCTURE JUST OVER THE NOTIFICATIONS WINDOW */
+        #notifications:before {         
+            content: '';
+            display:block;
+            width:0;
+            height:0;
+            color:transparent;
+            border:10px solid #CCC;
+            border-color:transparent transparent #FFF;
+            margin-top:-20px;
+            margin-left:10px;
+        }
+        
+         h3 {
+            display:block;
+            color:#333; 
+            background:#FFF;
+            font-weight:bold;
+            font-size:13px;    
+            padding:8px;
+            margin:0;
+            border-bottom:solid 1px rgba(100, 100, 100, .30);
+        } 
+        
+        .seeAll {
+            background:#F6F7F8;
+            padding:8px;
+            font-size:12px;
+            font-weight:bold;
+            border-top:solid 1px rgba(100, 100, 100, .30);
+            text-align:center;
+        }
+        .seeAll a {
+            color:#3b5998;
+        }
+        .seeAll a:hover {
+            background:#F6F7F8;
+            color:#3b5998;
+            text-decoration:underline;
+        }
+             }
+  </style>
+  <script>
+  $(document).ready(function () {
+
+	    // ANIMATEDLY DISPLAY THE NOTIFICATION COUNTER.
+	    $('#noti_Counter')
+	        .css({ opacity: 0 })
+	        .text('7')      // ADD DYNAMIC VALUE (YOU CAN EXTRACT DATA FROM DATABASE OR XML).
+	        .css({ top: '-10px' })
+	        .animate({ top: '-2px', opacity: 1 }, 500);
+
+	    $('#img').click(function () {
+
+	        // TOGGLE (SHOW OR HIDE) NOTIFICATION WINDOW.
+	        $('#notifications').fadeToggle('fast', 'linear', function () {
+	            if ($('#notifications').is(':hidden')) {
+	                $('#noti_Button').css('background-color', '#2E467C');
+	            }
+	            // CHANGE BACKGROUND COLOR OF THE BUTTON.
+	            else $('#noti_Button').css('background-color', '#FFF');
+	        });
+
+	        $('#noti_Counter').fadeOut('slow');     // HIDE THE COUNTER.
+
+	        return false;
+	    });
+
+	    // HIDE NOTIFICATIONS WHEN CLICKED ANYWHERE ON THE PAGE.
+	    $(document).click(function () {
+	        $('#notifications').hide();
+
+	        // CHECK IF NOTIFICATION COUNTER IS HIDDEN.
+	        if ($('#noti_Counter').is(':hidden')) {
+	            // CHANGE BACKGROUND COLOR OF THE BUTTON.
+	            $('#noti_Button').css('background-color', '#2E467C');
+	        }
+	    });
+
+	    $('#notifications').click(function () {
+	        return false;       // DO NOTHING WHEN CONTAINER IS CLICKED.
+	    });
+	});
+
+
+	var webSocket   = null;
+	var ws_protocol = null;
+	var ws_hostname = null;
+	var ws_port     = null;
+	var ws_endpoint = null;
+	/**
+	 * Event handler for clicking on button "Connect"
+	 */
+	function onConnectClick() {
+	   // var ws_protocol = document.getElementById("protocol").value;
+	   // var ws_hostname = document.getElementById("hostname").value;
+	  //  var ws_port     = document.getElementById("port").value;
+	   // var ws_endpoint = document.getElementById("endpoint").value;
+		var ws_protocol = "ws";
+		var ws_hostname = "localhost";
+		var ws_port     = "8080";
+		var ws_endpoint = "websocket";
+	    openWSConnection(ws_protocol, ws_hostname, ws_port, ws_endpoint);
+	}
+	/**
+	 * Event handler for clicking on button "Disconnect"
+	 */
+	function onDisconnectClick() {
+	    webSocket.close();
+	}
+	/**
+	 * Open a new WebSocket connection using the given parameters
+	 */
+	function openWSConnection(protocol, hostname, port, endpoint) {
+	    var webSocketURL = null;
+	     // webSocketURL = protocol + "://" + hostname + ":" + port +"/"+endpoint;
+	      webSocketURL = "ws"+"://"+location.host+"/"+"websocket";
+	    console.log("openWSConnection::Connecting to: " + webSocketURL);
+	    try {
+	        webSocket = new WebSocket(webSocketURL);
+	        webSocket.onopen = function(openEvent) {
+	            console.log("WebSocket OPEN: " + JSON.stringify(openEvent, null, 4));
+	            document.getElementById("btnSend").disabled       = false;
+	            document.getElementById("btnConnect").disabled    = true;
+	            document.getElementById("btnDisconnect").disabled = false;
+	        };
+	        webSocket.onclose = function (closeEvent) {
+	            console.log("WebSocket CLOSE: " + JSON.stringify(closeEvent, null, 4));
+	            document.getElementById("btnSend").disabled       = true;
+	            document.getElementById("btnConnect").disabled    = false;
+	            document.getElementById("btnDisconnect").disabled = true;
+	        };
+	        webSocket.onerror = function (errorEvent) {
+	            console.log("WebSocket ERROR: " + JSON.stringify(errorEvent, null, 4));
+	        };
+	        webSocket.onmessage = function (messageEvent) {
+	        	var count = 0;
+	        	count++;
+	        	console.log("WebSocket MESSAGE: " + count);
+	            var wsMsg = messageEvent.data;
+	            console.log("WebSocket MESSAGE: " + wsMsg);
+	            if (wsMsg.indexOf("error") > 0) {
+	                document.getElementById("incomingMsgOutput").value += "error: " + wsMsg.error + "\r\n";
+	            } else {
+	                document.getElementById("incomingMsgOutput").value +=/* "message: " + */wsMsg + "\r\n";
+	            }
+	        };
+	    } catch (exception) {
+	        console.error(exception);
+	    }
+	}
+	/**
+	 * Send a message to the WebSocket server
+	 */
+	function onSendClick() {
+	    if (webSocket.readyState != WebSocket.OPEN) {
+	        console.error("webSocket is not open: " + webSocket.readyState);
+	        return;
+	    }
+	    var msg = document.getElementById("message").value;
+	    msg="bind "+msg;
+	    webSocket.send(msg);
+	}
+
+  </script>
+    </head>
+    <body style="align-content: center ">
+    
+    <div>
+        <ul>
+            <li id="noti_Container">
+                <div id="noti_Counter"></div>    <!--SHOW NOTIFICATIONS COUNT.-->
+               
+                 <input id="img" type="image" src="img\mail.png" alt="nb" width="50" height="50">
+                <!--A CIRCLE LIKE BUTTON TO DISPLAY NOTIFICATION DROPDOWN.-->
+                 <!--THE NOTIFICAIONS DROPDOWN BOX.-->
+                <div id="notifications">
+                    <h3>Notifications</h3>
+                    <div style="height:300px;"></div>
+                    <div class="seeAll"><a href="#">See All</a></div>
+                </div>
+            </li>
+           <!--  <li><a href="#">Messages</a></li> -->
+        </ul>
+    </div>
+
+    <!-- <div style="font-size:90%;font-style:italic;color:#CCC;border:none;text-align:left;margin:20px 10px;">Click the Circle to show the Notification Window</div> -->
+    
+    
+    
+        <h1>Collabnotes WebSocket Subscription Service</h1>
+  <!--        WebSocket Connection Parameters Table -->
+  <div style="background-color: #fff;" class="row">
+  <div class="col-md-4">
+            <form class="form-inline">
+                <div class="form-group">
+        <table>
+            
+            <tr>
+                <td></td>
+                <td>
+                   <!--  <input id="btnConnect"    type="button" value="Connect"    onclick="onConnectClick()">&nbsp;&nbsp;
+                    <input id="btnDisconnect" type="button" value="Disconnect" onclick="onDisconnectClick()" disabled="disabled"> -->
+                    <div id="divId">websocket connection</div>
+                    <input id="btnConnect"    class="btn btn-default" value="Connect"   onclick="onConnectClick()">&nbsp;&nbsp;
+                    <input id="btnDisconnect" class="btn btn-default" value="Disconnect"  onclick="onDisconnectClick();myFunction()" disabled="disabled"> 
+                 
+        
+
+                </td>
+            </tr>
+        </table><br/> 
+        <!-- Send Message Table -->
+        <table>
+            <tr>
+                <td id="subId">SubscriptionId</td>
+                <td  style = "position: relative;left: 70px"><input type="text"  placeholder="Your subscriptionID here...!!" id="message"/></td>
+            </tr>
+            <tr>
+                <td></td>
+                <td style = "position: relative;left: 70px">
+                    <input id="btnSend" type="button" value="Send" disabled="disabled" onclick="onSendClick()">
+                </td>
+            </tr>
+        </table><br/>
+        </div>
+        </form>
+                
+        <textarea id="incomingMsgOutput" rows="20" cols="15" disabled="disabled"></textarea>
+        
+        </div>
+        
+        
+        </div>
+   </body>
+</html>
